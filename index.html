@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OS IPC Synchronization</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-wrap">
+  <nav class="sidebar">
+    <div class="brand" style="margin-bottom: 1rem;">IPC Sim</div>
+    <div class="theme-controls" style="display:flex; flex-direction:column; gap:5px; padding: 0 1rem; margin-bottom: 1.5rem;">
+      <button class="theme-btn active" data-mode="light">☀️ Light Mode</button>
+      <button class="theme-btn" data-mode="dark">🌙 Dark Mode</button>
+      <button class="theme-btn" data-mode="night">🌌 Night Mode</button>
+    </div>
+    <ul id="nav-list">
+      <li data-target="home" class="active">Dashboard</li>
+      <li data-target="pc">Producer-Consumer</li>
+      <li data-target="dp">Dining Philosophers</li>
+      <li data-target="rw">Readers-Writers</li>
+    </ul>
+  </nav>
+  <main class="content">
+
+    <div id="home" class="page active">
+      <header>
+        <h1>Operating Systems Simulation</h1>
+        <p>Interactive visualizations of classic process synchronization problems.</p>
+      </header>
+      <div class="grid cards">
+        <div class="card" data-link="pc">
+          <h2>Producer-Consumer</h2>
+          <p>Bounded-buffer problem demonstrating cooperative process synchronization.</p>
+        </div>
+        <div class="card" data-link="dp">
+          <h2>Dining Philosophers</h2>
+          <p>Resource allocation problem preventing deadlock and starvation.</p>
+        </div>
+        <div class="card" data-link="rw">
+          <h2>Readers-Writers</h2>
+          <p>Concurrency problem with multiple reader threads and exclusive writer threads.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="pc" class="page">
+      <header>
+        <h1>Producer-Consumer Problem</h1>
+      </header>
+      <div class="split-view">
+        <div class="sim-panel">
+          <h2>Simulation</h2>
+          <div class="status-panel" id="pc-status">Producer and Consumer are idle.</div>
+          <div class="var-panel">
+             <div>Mutex: <span id="pc-mutex">1</span></div>
+             <div>Empty: <span id="pc-empty">5</span></div>
+             <div>Full: <span id="pc-full">0</span></div>
+          </div>
+          <div class="buffer-vis" id="pc-buffer"></div>
+          <div class="wake-arrow-strip" id="pc-wake-arrow"></div>
+          <div class="controls">
+            <button id="pc-produce-btn" class="btn btn-primary">Produce</button>
+            <button id="pc-consume-btn" class="btn btn-primary">Consume</button>
+            <button id="pc-auto-btn" class="btn btn-primary">▶ Auto</button>
+            <button id="pc-reset-btn" class="btn btn-secondary">Reset</button>
+          </div>
+          <div class="speed-control">
+            <label>Speed: </label>
+            <input type="range" id="pc-speed" min="1" max="100" value="50">
+          </div>
+          <div id="pc-signal-log-wrap">
+            <h4>📡 Signal Wake-Up Log</h4>
+            <div id="pc-signal-log"><div class="log-placeholder">No signals sent yet...</div></div>
+          </div>
+        </div>
+        <div class="code-panel">
+          <h2>Code</h2>
+          <h3>Producer</h3>
+          <div class="code-lines">
+            <div id="pc-p-1">1: void producer() {</div>
+            <div id="pc-p-2">2:   while(true) {</div>
+            <div id="pc-p-3">3:     produce_item();</div>
+            <div id="pc-p-4">4:     wait(empty);</div>
+            <div id="pc-p-5">5:     wait(mutex);</div>
+            <div id="pc-p-6">6:     add_to_buffer();</div>
+            <div id="pc-p-7">7:     signal(mutex);</div>
+            <div id="pc-p-8">8:     signal(full);  // WAKE-UP</div>
+            <div id="pc-p-9">9:   }</div>
+            <div id="pc-p-10">10:}</div>
+          </div>
+          <h3>Consumer</h3>
+          <div class="code-lines">
+            <div id="pc-c-1">1: void consumer() {</div>
+            <div id="pc-c-2">2:   while(true) {</div>
+            <div id="pc-c-3">3:     wait(full);</div>
+            <div id="pc-c-4">4:     wait(mutex);</div>
+            <div id="pc-c-5">5:     remove_from_buffer();</div>
+            <div id="pc-c-6">6:     signal(mutex);</div>
+            <div id="pc-c-7">7:     signal(empty); // WAKE-UP</div>
+            <div id="pc-c-8">8:     consume_item();</div>
+            <div id="pc-c-9">9:   }</div>
+            <div id="pc-c-10">10:}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="dp" class="page">
+      <header>
+        <h1>Dining Philosophers Problem</h1>
+      </header>
+      <div class="split-view">
+        <div class="sim-panel">
+          <h2>Simulation</h2>
+          <div class="status-panel" id="dp-status">All philosophers are thinking.</div>
+          <div class="deadlock-alert" id="dp-deadlock-alert">
+            💀 DEADLOCK DETECTED! All philosophers are hungry — none can eat!
+          </div>
+          <div class="var-panel">
+            <div>Chopsticks: <span id="dp-chopsticks">5</span></div>
+            <div>Steps: <span id="dp-step-count">0</span></div>
+            <div>Deadlocks: <span id="dp-deadlock-count">0</span></div>
+          </div>
+          <div class="starve-panel" id="dp-starve-panel">
+            <div class="starve-label">⚠️ Starvation Meter</div>
+            <div class="starve-bars" id="dp-starve-bars">
+            </div>
+          </div>
+          <div class="table-vis" id="dp-table"></div>
+          <div class="controls">
+            <button id="dp-tick-btn" class="btn btn-primary">Random Step</button>
+            <button id="dp-auto-btn" class="btn btn-primary">▶ Auto</button>
+            <button id="dp-reset-btn" class="btn btn-secondary">Reset</button>
+          </div>
+          <div class="speed-control">
+            <label>Philosophers: </label>
+            <input type="number" id="dp-n-input" min="3" max="10" value="5" style="width: 50px; margin-right: 15px;">
+            <label><input type="checkbox" id="dp-prevent-cb" checked> Prevent Deadlock</label>
+            <label style="margin-left:15px;">Speed: </label>
+            <input type="range" id="dp-speed" min="1" max="100" value="50">
+          </div>
+          <div id="dp-log-wrap">
+            <h4>📋 State Event Log</h4>
+            <div id="dp-event-log"><div class="log-placeholder">No events yet...</div></div>
+          </div>
+        </div>
+        <div class="code-panel">
+          <h2>Code</h2>
+          <h3>Philosopher i</h3>
+          <div class="code-lines">
+            <div id="dp-p-1">1: void philosopher(int i) {</div>
+            <div id="dp-p-2">2:   while(true) {</div>
+            <div id="dp-p-3">3:     think();</div>
+            <div id="dp-p-4">4:     wait(chopstick[i]);</div>
+            <div id="dp-p-5">5:     wait(chopstick[(i+1)%5]);</div>
+            <div id="dp-p-6">6:     eat();</div>
+            <div id="dp-p-7">7:     signal(chopstick[i]);</div>
+            <div id="dp-p-8">8:     signal(chopstick[(i+1)%5]);</div>
+            <div id="dp-p-9">9:   }</div>
+            <div id="dp-p-10">10:}</div>
+          </div>
+          <div class="insight-box">
+            <h4>🧠 Deadlock Condition</h4>
+            <p>Deadlock occurs if ALL philosophers pick up their LEFT chopstick simultaneously — none can pick up the right one.</p>
+            <h4>🛡️ Prevention</h4>
+            <p>Allow at most 4 philosophers to sit simultaneously, or use an asymmetric solution (odd picks left first, even picks right first).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="rw" class="page">
+      <header>
+        <h1>Readers-Writers Problem</h1>
+      </header>
+      <div class="split-view">
+        <div class="sim-panel">
+          <h2>Simulation</h2>
+          <div class="status-panel" id="rw-status">Database is idle.</div>
+          <div class="var-panel">
+            <div>Mutex: <span id="rw-mutex">1</span></div>
+            <div>Wrt: <span id="rw-wrt">1</span></div>
+            <div>Read Count: <span id="rw-readcnt">0</span></div>
+            <div>Writers Waiting: <span id="rw-writers-waiting">0</span></div>
+          </div>
+          <div class="rw-vis" id="rw-vis-container">
+            <div class="db" id="rw-db">Database</div>
+            <div class="rw-agents" id="rw-agents-area"></div>
+          </div>
+          <div class="deadlock-alert rw-starve-alert" id="rw-starve-alert">
+            ⚠️ Writer Starvation Risk! Writers are waiting while readers keep entering.
+          </div>
+          <div class="controls">
+            <button id="rw-read-req-btn" class="btn btn-primary">Req Read</button>
+            <button id="rw-write-req-btn" class="btn btn-primary">Req Write</button>
+            <button id="rw-read-end-btn" class="btn btn-primary">End Read</button>
+            <button id="rw-write-end-btn" class="btn btn-primary">End Write</button>
+            <button id="rw-reset-btn" class="btn btn-secondary">Reset</button>
+          </div>
+          <div class="speed-control">
+            <label>Speed: </label>
+            <input type="range" id="rw-speed" min="1" max="100" value="50">
+          </div>
+          <div id="rw-signal-log-wrap">
+            <h4>📡 Signal Wake-Up Log</h4>
+            <div id="rw-signal-log"><div class="log-placeholder">No signals sent yet...</div></div>
+          </div>
+        </div>
+        <div class="code-panel">
+          <h2>Code</h2>
+          <h3>Reader</h3>
+          <div class="code-lines">
+            <div id="rw-r-1">1: void reader() {</div>
+            <div id="rw-r-2">2:   wait(mutex);</div>
+            <div id="rw-r-3">3:   readcount++;</div>
+            <div id="rw-r-4">4:   if(readcount == 1) wait(wrt);</div>
+            <div id="rw-r-5">5:   signal(mutex);</div>
+            <div id="rw-r-6">6:   read_data();</div>
+            <div id="rw-r-7">7:   wait(mutex);</div>
+            <div id="rw-r-8">8:   readcount--;</div>
+            <div id="rw-r-9">9:   if(readcount == 0) signal(wrt);</div>
+            <div id="rw-r-10">10:  signal(mutex);</div>
+            <div id="rw-r-11">11:}</div>
+          </div>
+          <h3>Writer</h3>
+          <div class="code-lines">
+            <div id="rw-w-1">1: void writer() {</div>
+            <div id="rw-w-2">2:   wait(wrt);</div>
+            <div id="rw-w-3">3:   write_data();</div>
+            <div id="rw-w-4">4:   signal(wrt);</div>
+            <div id="rw-w-5">5:}</div>
+          </div>
+          <div class="insight-box">
+            <h4>🧠 Starvation Risk</h4>
+            <p>In Reader-Priority: if readers keep arriving, writers may starve indefinitely.</p>
+            <h4>🛡️ signal(wrt) wake-up</h4>
+            <p>When the last reader exits (readcount==0), it calls signal(wrt) to WAKE UP any blocked writer.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="global-toast">
+  <span class="toast-icon" id="toast-icon"></span>
+  <div class="toast-msg">
+    <span class="toast-title" id="toast-title"></span>
+    <span class="toast-sub" id="toast-sub"></span>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
